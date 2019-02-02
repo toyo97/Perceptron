@@ -116,28 +116,28 @@ print('Mean: {}'.format(scores.mean()))
 
 print('\nGRID SEARCH')
 # Perceptron hyperparameters tuning using GridSearch with 10-fold cv
-alpha_params = [0.0001, 0.0003, 0.001, 0.003, 0.01]
+tol_params = [1e-2, 1e-3, 1e-4, 1e-5]
 max_iter_params = [5, 10, 15, 20, 50]
 
 param_grid = {
-    'alpha': alpha_params,
+    'tol': tol_params,
     'max_iter': max_iter_params
 }
 
-grid_search = GridSearchCV(Perceptron(tol=1e-3), param_grid, scoring='accuracy', cv=k_fold)
+grid_search = GridSearchCV(Perceptron(), param_grid, scoring='accuracy', cv=k_fold)
 grid_search.fit(X_train, y_train)
 
 best_params = grid_search.best_params_
 print('Best params: {}'.format(best_params))
 print('Grid search best score: {}'.format(grid_search.best_score_))
 results = pd.DataFrame(grid_search.cv_results_)
-print(results[['param_alpha', 'param_max_iter', 'mean_test_score', 'std_test_score', 'mean_fit_time']])
+print(results[['param_tol', 'param_max_iter', 'mean_test_score', 'std_test_score', 'mean_fit_time']])
 
 
 print('\nPREDICTION TEST')
 # Use best parameters to predict salary in the test set
 X_test = ct.transform(df_test)
-best_clf = Perceptron(alpha=best_params['alpha'], max_iter=best_params['max_iter'], tol=1e-3)
+best_clf = Perceptron(tol=best_params['tol'], max_iter=best_params['max_iter'])
 best_clf.fit(X_train, y_train)
 print('Score on test set: {}'.format(best_clf.score(X_test, y_test)))
 
