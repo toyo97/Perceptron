@@ -7,8 +7,10 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import Perceptron
 from sklearn.model_selection import KFold, cross_val_score, GridSearchCV
-from warnings import filterwarnings
+from sklearn.model_selection import learning_curve
+import matplotlib.pyplot as plt
 
+from warnings import filterwarnings
 filterwarnings('ignore')
 
 
@@ -100,19 +102,19 @@ ct = ColumnTransformer(transformers=transformers)
 # Use the transformer to obtain a numeric numpy matrix
 X_train = ct.fit_transform(df_train)
 
-print('n_samples, n_features: {}'.format(X_train.shape))
+print('n_train_samples, n_train_features: {}'.format(X_train.shape))
 
 # Select the Perceptron linear model from scikit-learn library (with some parameters)
 clf = Perceptron(max_iter=40, tol=1e-3)
 
-print('10-FOLD CROSS VALIDATION..')
+print('\n10-FOLD CROSS VALIDATION')
 # Use cross_val_score function from sklearn to get accuracy scores out of a 10-fold cross validation
 k_fold = KFold(n_splits=10, shuffle=True, random_state=RANDOM_STATE)
 scores = cross_val_score(clf, X_train, y_train, cv=k_fold)
 print('10-fold cross validation scores: {}'.format(scores))
 print('Mean: {}'.format(scores.mean()))
 
-print('\nGRID SEARCH..')
+print('\nGRID SEARCH')
 # Perceptron hyperparameters tuning using GridSearch with 10-fold cv
 alpha_params = [0.0001, 0.0003, 0.001, 0.003, 0.01]
 max_iter_params = [5, 10, 15, 20, 50]
@@ -131,9 +133,42 @@ print('Grid search best score: {}'.format(grid_search.best_score_))
 results = pd.DataFrame(grid_search.cv_results_)
 print(results[['param_alpha', 'param_max_iter', 'mean_test_score', 'std_test_score', 'mean_fit_time']])
 
+
 print('\nPREDICTION TEST')
 # Use best parameters to predict salary in the test set
 X_test = ct.transform(df_test)
 best_clf = Perceptron(alpha=best_params['alpha'], max_iter=best_params['max_iter'], tol=1e-3)
 best_clf.fit(X_train, y_train)
 print('Score on test set: {}'.format(best_clf.score(X_test, y_test)))
+
+print('\nLEARNING CURVE')
+# Plot the learning curve
+X = ct.fit_transform(df)
+
+train_sizes = np.linspace(.1, 1.0, 5)
+
+train_sizes, train_scores, test_scores = learning_curve(best_clf, X, y, cv=k_fold, n_jobs=4, train_sizes=train_sizes)
+
+plt.figure()
+plt.title('Learning Curves (Perceptron)')
+plt.ylim((0.7, 1.01))
+plt.xlabel('Training samples')
+plt.ylabel('Score')
+
+train_scores_mean = np.mean(train_scores, axis=1)
+train_scores_std = np.std(train_scores, axis=1)
+test_scores_mean = np.mean(test_scores, axis=1)
+test_scores_std = np.std(test_scores, axis=1)
+
+plt.grid()
+plt.fill_between(train_sizes, train_scores_mean - train_scores_std, train_scores_mean + train_scores_std,
+                 alpha=0.1, color='r')
+plt.fill_between(train_sizes, test_scores_mean - test_scores_std, test_scores_mean + test_scores_std,
+                 alpha=0.1, color='g')
+plt.plot(train_sizes, train_scores_mean, 'o-', color='r',
+         label='Training score')
+plt.plot(train_sizes, test_scores_mean, 'o-', color='g',
+         label='Cross-validation score')
+
+plt.legend(loc='best')
+plt.show()
