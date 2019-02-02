@@ -18,14 +18,14 @@ def multi_cat_transform(X):
     return X.drop(columns=columns)
 
 
-data_file = open('survey_results_public.csv')
+data_file = open('data/survey_results_public.csv')
 
-df = pd.read_csv(data_file, index_col=0)
+ds = pd.read_csv(data_file, index_col=0)
 
 
-df.drop(['ExpectedSalary'], axis=1, inplace=True)
-df = df[pd.notnull(df['Salary'])]
-salary_col = df.pop('Salary')
+ds.drop(['ExpectedSalary'], axis=1, inplace=True)
+ds = ds[pd.notnull(ds['Salary'])]
+salary_col = ds.pop('Salary')
 
 median_salary = salary_col.median()
 
@@ -38,18 +38,18 @@ y = np.array(salary_col.values >= median_salary, dtype=np.int64)
 
 # df['VersionControl'].value_counts()
 
-kinds = np.array([dt.kind for dt in df.dtypes])
+kinds = np.array([dt.kind for dt in ds.dtypes])
 
 
-all_cols = df.columns.values
+all_cols = ds.columns.values
 is_num = kinds != 'O'
 num_cols, cat_cols = all_cols[is_num], all_cols[~is_num]
 
 # high unique values count indicates multiple category feature (to be separated) - plus exceptions
-multi_cat_cols = [c for c in df[cat_cols] if df[c].nunique() >= 200] + ['Race', 'StackOverflowDevices', 'Gender']
+multi_cat_cols = [c for c in ds[cat_cols] if ds[c].nunique() >= 200] + ['Race', 'StackOverflowDevices', 'Gender']
 single_cat_cols = [c for c in cat_cols if c not in multi_cat_cols]
 
-df_train, df_test, y_train, y_test = train_test_split(df, y, test_size=0.2, random_state=42)
+ds_train, ds_test, y_train, y_test = train_test_split(ds, y, test_size=0.2, random_state=42)
 
 # dummies = df['Gender'].str.get_dummies(sep='; ')
 # dummies.columns = ['Gender_'+c for c in dummies.columns]
@@ -61,7 +61,7 @@ df_train, df_test, y_train, y_test = train_test_split(df, y, test_size=0.2, rand
 # df_train_t
 
 
-multi_cat_step = ('mce', FunctionTransformer(multi_cat_transform))
+multi_cat_step = ('mce', FunctionTransformer(multi_cat_transform, validate=False))
 
 num_si_step = ('si', SimpleImputer(missing_values=np.nan, strategy='mean'))
 num_ss_step = ('ss', StandardScaler())
@@ -85,11 +85,11 @@ transformers = [multi_cat_transformer, num_transformer, cat_transformer]
 ct = ColumnTransformer(transformers=transformers)
 
 
-X_train = ct.fit_transform(df_train)
+X_train = ct.fit_transform(ds_train)
 
 
 clf = Perceptron(max_iter=50, tol=1e-3)
 clf.fit(X_train, y_train)
 
-X_test = ct.transform(df_test)
+X_test = ct.transform(ds_test)
 print(clf.score(X_test, y_test))
