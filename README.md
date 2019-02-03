@@ -21,7 +21,7 @@ This program also allows us to:
 For any further information about both analysis and script, please read the whole documentation in Report.pdf
 
 ## Usage
-To reproduce the results shown in the report, just run the Perceptron.py script using a python environment.
+To reproduce the results shown in the report, just run the Perceptron.py script using a python 3 environment.
 Required packages:
 - `numpy 1.15.4`
 - `pandas 0.24.0`
